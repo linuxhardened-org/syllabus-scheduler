@@ -166,6 +166,11 @@ function ImportCourse() {
                 setActiveJob(data.data);
                 localStorage.setItem('activeImportJobId', data.data.job_id);
                 setSuccess('Import job submitted! AI is processing in the background...');
+
+                // Reset form state to allow new submissions
+                setLoading(false);
+                setRawText('');
+                if (importMode === 'url') setCourseUrl('');
             } else {
                 setError(data.error || 'Import failed');
                 setLoading(false);
