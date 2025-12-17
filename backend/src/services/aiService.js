@@ -117,12 +117,56 @@ function extractJSON(text) {
         throw new Error('No valid JSON object found in AI response');
     }
 
-    const jsonString = text.slice(startIndex, endIndex + 1);
+    let jsonString = text.slice(startIndex, endIndex + 1);
 
+    // Try to parse directly first
     try {
         return JSON.parse(jsonString);
     } catch (e) {
-        throw new Error(`Invalid JSON in AI response: ${e.message}`);
+        console.log('⚠️ First JSON parse failed, attempting repairs...');
+    }
+
+    // Repair attempts for common AI JSON issues
+    try {
+        // Remove trailing commas before ] or }
+        jsonString = jsonString.replace(/,\s*([}\]])/g, '$1');
+
+        // Replace single quotes with double quotes
+        jsonString = jsonString.replace(/'/g, '"');
+
+        // Fix unquoted keys
+        jsonString = jsonString.replace(/(\{|\,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+
+        // Remove any text after the last }
+        const lastBrace = jsonString.lastIndexOf('}');
+        if (lastBrace !== -1) {
+            jsonString = jsonString.slice(0, lastBrace + 1);
+        }
+
+        // Try parsing again
+        try {
+            return JSON.parse(jsonString);
+        } catch (e2) {
+            console.log('⚠️ Repaired JSON still invalid, trying incremental parse...');
+        }
+
+        // Last resort: Try to find a valid JSON by incrementally removing from end
+        for (let i = jsonString.length - 1; i > startIndex + 50; i--) {
+            if (jsonString[i] === '}') {
+                const attempt = jsonString.slice(0, i + 1);
+                try {
+                    const result = JSON.parse(attempt);
+                    console.log('✅ Found valid JSON by truncating');
+                    return result;
+                } catch (e3) {
+                    // Continue trying
+                }
+            }
+        }
+
+        throw new Error('Could not repair JSON: ' + e.message);
+    } catch (repairError) {
+        throw new Error(`Invalid JSON in AI response: ${repairError.message}`);
     }
 }
 

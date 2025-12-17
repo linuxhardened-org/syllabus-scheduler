@@ -1,7 +1,6 @@
 import express from 'express';
 import Course from '../models/Course.js';
 import { parseWithAI } from '../services/aiService.js';
-import * as cheerio from 'cheerio';
 
 const router = express.Router();
 
@@ -60,13 +59,14 @@ router.post('/fetch-url', async (req, res) => {
         }
 
         const html = await response.text();
-        const $ = cheerio.load(html);
 
-        // Extract course information - try multiple selectors
-        let title = $('h1').first().text().trim() ||
-            $('title').text().trim() ||
-            $('[class*="course-title"]').text().trim() ||
-            'Unknown Course';
+        // Extract title from various HTML patterns
+        let title = 'Unknown Course';
+        const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/i) ||
+            html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (titleMatch) {
+            title = titleMatch[1].trim().replace(/\s+/g, ' ');
+        }
 
         // Extract platform from URL
         let platform = 'Unknown';
@@ -76,44 +76,25 @@ router.post('/fetch-url', async (req, res) => {
             platform = platform.charAt(0).toUpperCase() + platform.slice(1);
         } catch (e) { }
 
-        // Remove scripts, styles, and hidden elements
-        $('script, style, nav, footer, header, [hidden], .hidden, [style*="display: none"]').remove();
+        // Remove scripts, styles, and comments
+        let cleanHtml = html
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            .replace(/<!--[\s\S]*?-->/g, '')
+            .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+            .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+            .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '');
 
-        // Try to find course content/syllabus
-        let syllabusText = '';
-
-        // Try specific selectors for course platforms
-        const selectors = [
-            '[class*="curriculum"]',
-            '[class*="syllabus"]',
-            '[class*="course-content"]',
-            '[class*="lesson-list"]',
-            '[class*="module"]',
-            '[class*="chapter"]',
-            '[class*="section"]',
-            '.accordion',
-            '[role="list"]',
-            'main',
-            'article',
-            '.content'
-        ];
-
-        for (const selector of selectors) {
-            const content = $(selector).text().trim();
-            if (content && content.length > 100) {
-                syllabusText += content + '\n\n';
-            }
-        }
-
-        // If no specific content found, get the body text
-        if (!syllabusText || syllabusText.length < 200) {
-            syllabusText = $('body').text();
-        }
-
-        // Clean up the text
-        syllabusText = syllabusText
-            .replace(/\s+/g, ' ')           // Normalize whitespace
-            .replace(/\n\s*\n/g, '\n')      // Remove empty lines
+        // Extract text content from HTML
+        let syllabusText = cleanHtml
+            .replace(/<[^>]+>/g, '\n')  // Replace tags with newlines
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/\s+/g, ' ')       // Normalize whitespace
             .trim();
 
         // Truncate if too long (AI has limits)

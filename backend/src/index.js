@@ -8,6 +8,10 @@ import dotenv from 'dotenv';
 import courseRoutes from './routes/courses.js';
 import planRoutes from './routes/plans.js';
 import healthRoutes from './routes/health.js';
+import jobRoutes from './routes/jobs.js';
+
+// Service imports
+import { connectQueue } from './services/queueService.js';
 
 dotenv.config();
 
@@ -27,6 +31,7 @@ app.use(morgan('dev'));
 app.use('/api/health', healthRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/plans', planRoutes);
+app.use('/api/jobs', jobRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -36,7 +41,8 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/api/health',
       courses: '/api/courses',
-      plans: '/api/plans'
+      plans: '/api/plans',
+      jobs: '/api/jobs'
     }
   });
 });
@@ -62,11 +68,21 @@ const startServer = async () => {
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
 
+    // Connect to RabbitMQ (background queue)
+    connectQueue().then(connected => {
+      if (connected) {
+        console.log('✅ RabbitMQ queue ready');
+      } else {
+        console.log('⚠️ RabbitMQ not available - jobs will process immediately');
+      }
+    });
+
     // Start server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📡 Ollama Host: ${process.env.OLLAMA_HOST || 'http://localhost:11434'}`);
       console.log(`🤖 AI Model: ${process.env.OLLAMA_MODEL || 'llama3.1'}`);
+      console.log(`🐰 RabbitMQ: ${process.env.RABBITMQ_URL || 'amqp://localhost:5672'}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
