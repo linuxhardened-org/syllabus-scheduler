@@ -1,6 +1,7 @@
 import express from 'express';
 import Course from '../models/Course.js';
 import { parseWithAI } from '../services/aiService.js';
+import ytpl from 'ytpl';
 
 const router = express.Router();
 
@@ -41,6 +42,37 @@ router.post('/fetch-url', async (req, res) => {
         }
 
         console.log('🌐 Fetching URL:', url);
+
+        // Check for YouTube Playlist
+        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            try {
+                const playlistId = await ytpl.getPlaylistID(url).catch(() => null);
+                if (playlistId) {
+                    console.log('📺 Detected YouTube Playlist:', playlistId);
+                    const playlist = await ytpl(playlistId, { limit: 500 });
+
+                    let text = `Course: ${playlist.title}\nPlatform: YouTube\n\n`;
+                    playlist.items.forEach((item, index) => {
+                        text += `${index + 1}. ${item.title} (${item.duration || '0:00'})\n`;
+                    });
+
+                    return res.json({
+                        success: true,
+                        data: {
+                            title: playlist.title,
+                            platform: 'YouTube',
+                            url,
+                            rawText: text,
+                            extractedLength: text.length
+                        }
+                    });
+                }
+            } catch (ytError) {
+                console.warn('YouTube playlist fetch failed, falling back to HTML fetch:', ytError.message);
+            }
+        }
+
+        // Fetch the page content
 
         // Fetch the page content
         const response = await fetch(url, {
