@@ -252,223 +252,223 @@ Module 3: Logging & Monitoring
                 </div>
             )}
 
-            {!activeJob && (
-                <div className="grid grid-2">
-                    <div className="card">
-                        <div className="card-header">
-                            <h3 className="card-title">Course Content</h3>
-                        </div>
-
-                        {/* Import Mode Toggle */}
-                        <div style={{
-                            display: 'flex',
-                            gap: '0.5rem',
-                            marginBottom: '1.5rem',
-                            background: 'var(--bg-secondary)',
-                            padding: '0.25rem',
-                            borderRadius: 'var(--radius-md)'
-                        }}>
-                            <button
-                                type="button"
-                                className={`btn ${importMode === 'paste' ? 'btn-primary' : 'btn-secondary'}`}
-                                style={{ flex: 1, padding: '0.5rem' }}
-                                onClick={() => setImportMode('paste')}
-                            >
-                                📋 Paste Text
-                            </button>
-                            <button
-                                type="button"
-                                className={`btn ${importMode === 'url' ? 'btn-primary' : 'btn-secondary'}`}
-                                style={{ flex: 1, padding: '0.5rem' }}
-                                onClick={() => setImportMode('url')}
-                            >
-                                🌐 From URL
-                            </button>
-                        </div>
-
-                        {/* URL Input Section */}
-                        {importMode === 'url' && (
-                            <div className="form-group" style={{
-                                padding: '1rem',
-                                background: 'var(--bg-secondary)',
-                                borderRadius: 'var(--radius-md)',
-                                marginBottom: '1rem'
-                            }}>
-                                <label className="form-label">Course URL</label>
-                                <input
-                                    type="url"
-                                    className="form-input"
-                                    placeholder="https://learn.kodekloud.com/user/courses/..."
-                                    value={courseUrl}
-                                    onChange={(e) => setCourseUrl(e.target.value)}
-                                />
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={handleFetchUrl}
-                                    disabled={fetchingUrl || !courseUrl.trim()}
-                                    style={{ width: '100%', marginTop: '0.75rem' }}
-                                >
-                                    {fetchingUrl ? (
-                                        <>
-                                            <div className="spinner" style={{ width: '16px', height: '16px', margin: 0 }}></div>
-                                            Fetching...
-                                        </>
-                                    ) : (
-                                        <>🔍 Fetch Course Content</>
-                                    )}
-                                </button>
-                                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                    ⚠️ Note: Some platforms require login. If fetch fails, copy-paste the content manually.
-                                </small>
-                            </div>
-                        )}
-
-                        <form onSubmit={handleImport}>
-                            <div className="form-group">
-                                <label className="form-label">Platform (optional)</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="e.g., KodeKloud, Udemy, Coursera"
-                                    value={platform}
-                                    onChange={(e) => setPlatform(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Course Code (optional)</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="e.g., CKA-2024, AWS-SAA"
-                                    value={courseCode}
-                                    onChange={(e) => setCourseCode(e.target.value.toUpperCase())}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Raw Syllabus Content *</label>
-                                <textarea
-                                    className="form-textarea"
-                                    placeholder="Paste your course outline, syllabus, or table of contents here..."
-                                    value={rawText}
-                                    onChange={(e) => setRawText(e.target.value)}
-                                    style={{ minHeight: '300px' }}
-                                    required
-                                />
-                                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                    {rawText.length} characters • Minimum 50 required
-                                </small>
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="btn btn-primary"
-                                disabled={loading || rawText.length < 50}
-                                style={{ width: '100%' }}
-                            >
-                                {loading ? (
-                                    <>Processing in background...</>
-                                ) : (
-                                    <>🚀 Import with AI</>
-                                )}
-                            </button>
-                        </form>
+            {/* Form Section - Always visible now */}
+            <div className="grid grid-2">
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Course Content</h3>
                     </div>
 
-                    <div className="card">
-                        <div className="card-header">
-                            <h3 className="card-title">How it works</h3>
-                        </div>
+                    {/* Import Mode Toggle */}
+                    <div style={{
+                        display: 'flex',
+                        gap: '0.5rem',
+                        marginBottom: '1.5rem',
+                        background: 'var(--bg-secondary)',
+                        padding: '0.25rem',
+                        borderRadius: 'var(--radius-md)'
+                    }}>
+                        <button
+                            type="button"
+                            className={`btn ${importMode === 'paste' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ flex: 1, padding: '0.5rem' }}
+                            onClick={() => setImportMode('paste')}
+                        >
+                            📋 Paste Text
+                        </button>
+                        <button
+                            type="button"
+                            className={`btn ${importMode === 'url' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ flex: 1, padding: '0.5rem' }}
+                            onClick={() => setImportMode('url')}
+                        >
+                            🌐 From URL
+                        </button>
+                    </div>
 
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
-                                <div style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    background: 'var(--accent-gradient)',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0
-                                }}>1</div>
-                                <div>
-                                    <strong>Paste or fetch content</strong>
-                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                        Content is submitted to a background queue
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
-                                <div style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    background: 'var(--accent-gradient)',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0
-                                }}>2</div>
-                                <div>
-                                    <strong>AI processing</strong>
-                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                        AI runs in the background (even if you close the tab)
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                                <div style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    background: 'var(--accent-gradient)',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0
-                                }}>3</div>
-                                <div>
-                                    <strong>Track progress</strong>
-                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                        You'll be notified when the course is ready
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
-                            <h4 style={{ marginBottom: '0.75rem' }}>Try this example:</h4>
+                    {/* URL Input Section */}
+                    {importMode === 'url' && (
+                        <div className="form-group" style={{
+                            padding: '1rem',
+                            background: 'var(--bg-secondary)',
+                            borderRadius: 'var(--radius-md)',
+                            marginBottom: '1rem'
+                        }}>
+                            <label className="form-label">Course URL</label>
+                            <input
+                                type="url"
+                                className="form-input"
+                                placeholder="https://learn.kodekloud.com/user/courses/..."
+                                value={courseUrl}
+                                onChange={(e) => setCourseUrl(e.target.value)}
+                            />
                             <button
                                 type="button"
                                 className="btn btn-secondary"
-                                onClick={() => setRawText(exampleText)}
-                                style={{ width: '100%' }}
+                                onClick={handleFetchUrl}
+                                disabled={fetchingUrl || !courseUrl.trim()}
+                                style={{ width: '100%', marginTop: '0.75rem' }}
                             >
-                                📋 Load Example Syllabus
+                                {fetchingUrl ? (
+                                    <>
+                                        <div className="spinner" style={{ width: '16px', height: '16px', margin: 0 }}></div>
+                                        Fetching...
+                                    </>
+                                ) : (
+                                    <>🔍 Fetch Course Content</>
+                                )}
                             </button>
+                            <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                ⚠️ Note: Some platforms require login. If fetch fails, copy-paste the content manually.
+                            </small>
+                        </div>
+                    )}
 
-                            {queueStatus && (
-                                <div style={{
-                                    marginTop: '1rem',
-                                    padding: '0.75rem',
-                                    background: 'var(--bg-secondary)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    textAlign: 'center',
-                                    fontSize: '0.9rem',
-                                    color: 'var(--text-secondary)'
-                                }}>
-                                    📊 Jobs waiting in queue: <strong>{queueStatus.messageCount}</strong>
-                                </div>
+                    <form onSubmit={handleImport}>
+                        <div className="form-group">
+                            <label className="form-label">Platform (optional)</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="e.g., KodeKloud, Udemy, Coursera"
+                                value={platform}
+                                onChange={(e) => setPlatform(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Course Code (optional)</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="e.g., CKA-2024, AWS-SAA"
+                                value={courseCode}
+                                onChange={(e) => setCourseCode(e.target.value.toUpperCase())}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Raw Syllabus Content *</label>
+                            <textarea
+                                className="form-textarea"
+                                placeholder="Paste your course outline, syllabus, or table of contents here..."
+                                value={rawText}
+                                onChange={(e) => setRawText(e.target.value)}
+                                style={{ minHeight: '300px' }}
+                                required
+                            />
+                            <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                {rawText.length} characters • Minimum 50 required
+                            </small>
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={loading || rawText.length < 50}
+                            style={{ width: '100%' }}
+                        >
+                            {loading ? (
+                                <>Processing in background...</>
+                            ) : (
+                                <>🚀 Import with AI</>
                             )}
+                        </button>
+                    </form>
+                </div>
+
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">How it works</h3>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
+                            <div style={{
+                                width: '32px',
+                                height: '32px',
+                                background: 'var(--accent-gradient)',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                            }}>1</div>
+                            <div>
+                                <strong>Paste or fetch content</strong>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    Content is submitted to a background queue
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
+                            <div style={{
+                                width: '32px',
+                                height: '32px',
+                                background: 'var(--accent-gradient)',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                            }}>2</div>
+                            <div>
+                                <strong>AI processing</strong>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    AI runs in the background (even if you close the tab)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                            <div style={{
+                                width: '32px',
+                                height: '32px',
+                                background: 'var(--accent-gradient)',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                            }}>3</div>
+                            <div>
+                                <strong>Track progress</strong>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    You'll be notified when the course is ready
+                                </p>
+                            </div>
                         </div>
                     </div>
+
+                    <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
+                        <h4 style={{ marginBottom: '0.75rem' }}>Try this example:</h4>
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => setRawText(exampleText)}
+                            style={{ width: '100%' }}
+                        >
+                            📋 Load Example Syllabus
+                        </button>
+
+                        {queueStatus && (
+                            <div style={{
+                                marginTop: '1rem',
+                                padding: '0.75rem',
+                                background: 'var(--bg-secondary)',
+                                borderRadius: 'var(--radius-sm)',
+                                textAlign: 'center',
+                                fontSize: '0.9rem',
+                                color: 'var(--text-secondary)'
+                            }}>
+                                📊 Jobs waiting in queue: <strong>{queueStatus.messageCount}</strong>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            )}
+            </div>
+
         </div>
     );
 }
