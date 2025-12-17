@@ -28,14 +28,27 @@ function Courses() {
         }
     };
 
-    const deleteCourse = async (id) => {
-        if (!confirm('Delete this course? This cannot be undone.')) return;
+
+    const deleteCourse = async (id, e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        if (!window.confirm('Delete this course? This cannot be undone.')) return;
 
         try {
-            await fetch(`${API_URL}/courses/${id}`, { method: 'DELETE' });
-            setCourses(courses.filter(c => c._id !== id));
+            console.log('Deleting course:', id);
+            const response = await fetch(`${API_URL}/courses/${id}`, { method: 'DELETE' });
+            const data = await response.json();
+            console.log('Delete response:', data);
+
+            if (data.success) {
+                setCourses(courses.filter(c => c._id !== id));
+            } else {
+                alert('Failed to delete: ' + data.error);
+            }
         } catch (error) {
             console.error('Failed to delete course:', error);
+            alert('Error deleting course: ' + error.message);
         }
     };
 
@@ -104,7 +117,13 @@ function Courses() {
                     {courses.map(course => (
                         <div key={course._id} className="card course-card">
                             <div className="course-platform">{course.platform}</div>
-                            <div className="course-title">{course.title}</div>
+                            <Link
+                                to={`/courses/${course._id}`}
+                                className="course-title"
+                                style={{ display: 'block', color: 'inherit', cursor: 'pointer' }}
+                            >
+                                {course.title}
+                            </Link>
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
                                 Code: {course.course_code}
                             </div>
@@ -122,66 +141,21 @@ function Courses() {
                                 </div>
                             </div>
 
-                            {showCreatePlan === course._id ? (
-                                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
-                                    <div className="form-group">
-                                        <label className="form-label">Daily commitment (minutes)</label>
-                                        <input
-                                            type="number"
-                                            className="form-input"
-                                            value={planSettings.daily_commitment_minutes}
-                                            onChange={(e) => setPlanSettings({
-                                                ...planSettings,
-                                                daily_commitment_minutes: parseInt(e.target.value) || 60
-                                            })}
-                                            min="15"
-                                            max="480"
-                                        />
-                                    </div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={planSettings.exclude_weekends}
-                                            onChange={(e) => setPlanSettings({
-                                                ...planSettings,
-                                                exclude_weekends: e.target.checked
-                                            })}
-                                        />
-                                        <span style={{ color: 'var(--text-secondary)' }}>Skip weekends</span>
-                                    </label>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button
-                                            className="btn btn-success"
-                                            onClick={() => createPlan(course._id)}
-                                            style={{ flex: 1 }}
-                                        >
-                                            Create Plan
-                                        </button>
-                                        <button
-                                            className="btn btn-secondary"
-                                            onClick={() => setShowCreatePlan(null)}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={() => setShowCreatePlan(course._id)}
-                                        style={{ flex: 1 }}
-                                    >
-                                        📅 Create Study Plan
-                                    </button>
-                                    <button
-                                        className="btn btn-danger"
-                                        onClick={() => deleteCourse(course._id)}
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
-                            )}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                                <Link
+                                    to={`/courses/${course._id}`}
+                                    className="btn btn-primary"
+                                    style={{ flex: 1 }}
+                                >
+                                    📖 View Lessons
+                                </Link>
+                                <button
+                                    className="btn btn-danger"
+                                    onClick={(e) => deleteCourse(course._id, e)}
+                                >
+                                    🗑️
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>

@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import ImportCourse from './pages/ImportCourse';
 import PlanView from './pages/PlanView';
 import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
 
 function App() {
     return (
@@ -13,6 +14,7 @@ function App() {
                     <Route index element={<Dashboard />} />
                     <Route path="import" element={<ImportCourse />} />
                     <Route path="courses" element={<Courses />} />
+                    <Route path="courses/:id" element={<CourseDetail />} />
                     <Route path="plan/:id" element={<PlanView />} />
                 </Route>
             </Routes>
@@ -21,3 +23,4 @@ function App() {
 }
 
 export default App;
+

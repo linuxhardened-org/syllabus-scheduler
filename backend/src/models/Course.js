@@ -64,7 +64,8 @@ const courseSchema = new mongoose.Schema({
 
 // Virtual: Get total lesson count
 courseSchema.virtual('total_lessons').get(function () {
-    return this.modules.reduce((count, module) => count + module.lessons.length, 0);
+    if (!this.modules || !Array.isArray(this.modules)) return 0;
+    return this.modules.reduce((count, module) => count + (module.lessons?.length || 0), 0);
 });
 
 // Ensure virtuals are included in JSON
