@@ -68,7 +68,7 @@ services:
       PORT: 5000
       MONGO_URI: mongodb://planner-mongo:27017/study_planner
       OLLAMA_HOST: http://planner-ai:11434
-      OLLAMA_MODEL: phi3
+      OLLAMA_MODEL: llama3.1
       RABBITMQ_URL: amqp://admin:admin123@planner-rabbitmq:5672
     volumes:
       - ./backend:/app

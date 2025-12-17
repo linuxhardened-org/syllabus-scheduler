@@ -119,11 +119,14 @@ function extractJSON(text) {
 
     let jsonString = text.slice(startIndex, endIndex + 1);
 
+    let lastError = null;
+
     // Try to parse directly first
     try {
         return JSON.parse(jsonString);
     } catch (e) {
         console.log('⚠️ First JSON parse failed, attempting repairs...');
+        lastError = e;
     }
 
     // Repair attempts for common AI JSON issues
@@ -164,7 +167,7 @@ function extractJSON(text) {
             }
         }
 
-        throw new Error('Could not repair JSON: ' + e.message);
+        throw new Error('Could not repair JSON: ' + (lastError ? lastError.message : 'Unknown error'));
     } catch (repairError) {
         throw new Error(`Invalid JSON in AI response: ${repairError.message}`);
     }
