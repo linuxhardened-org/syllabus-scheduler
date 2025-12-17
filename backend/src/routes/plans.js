@@ -49,6 +49,18 @@ router.post('/', async (req, res) => {
             });
         }
 
+        // Check if a plan already exists for this user and course
+        const existingPlan = await UserPlan.findOne({ user_id, course_id });
+        if (existingPlan) {
+            // Return the existing plan instead of creating a duplicate
+            return res.status(200).json({
+                success: true,
+                message: 'Plan already exists for this course',
+                data: existingPlan,
+                existing: true
+            });
+        }
+
         // Create plan
         const plan = new UserPlan({
             user_id,

@@ -29,26 +29,24 @@ function Courses() {
     };
 
 
-    const deleteCourse = async (id, e) => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        if (!window.confirm('Delete this course? This cannot be undone.')) return;
+    const deleteCourse = async (courseId) => {
+        const confirmed = window.confirm('Delete this course and all study progress? This cannot be undone.');
+        if (!confirmed) return;
 
         try {
-            console.log('Deleting course:', id);
-            const response = await fetch(`${API_URL}/courses/${id}`, { method: 'DELETE' });
+            const response = await fetch(`${API_URL}/courses/${courseId}`, {
+                method: 'DELETE'
+            });
             const data = await response.json();
-            console.log('Delete response:', data);
 
             if (data.success) {
-                setCourses(courses.filter(c => c._id !== id));
+                setCourses(prev => prev.filter(c => c._id !== courseId));
             } else {
-                alert('Failed to delete: ' + data.error);
+                alert('Failed to delete: ' + (data.error || 'Unknown error'));
             }
         } catch (error) {
-            console.error('Failed to delete course:', error);
-            alert('Error deleting course: ' + error.message);
+            console.error('Delete error:', error);
+            alert('Error deleting course');
         }
     };
 
@@ -150,8 +148,9 @@ function Courses() {
                                     📖 View Lessons
                                 </Link>
                                 <button
+                                    type="button"
                                     className="btn btn-danger"
-                                    onClick={(e) => deleteCourse(course._id, e)}
+                                    onClick={() => deleteCourse(course._id)}
                                 >
                                     🗑️
                                 </button>

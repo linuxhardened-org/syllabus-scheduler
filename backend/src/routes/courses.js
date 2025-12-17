@@ -1,6 +1,7 @@
 import express from 'express';
 import Course from '../models/Course.js';
 import { parseWithAI } from '../services/aiService.js';
+import * as cheerio from 'cheerio';
 
 const router = express.Router();
 
@@ -22,6 +23,129 @@ router.get('/', async (req, res) => {
         res.status(500).json({
             success: false,
             error: error.message
+        });
+    }
+});
+
+// ===========================================
+// POST /api/courses/fetch-url - Fetch syllabus from URL
+// ===========================================
+router.post('/fetch-url', async (req, res) => {
+    try {
+        const { url } = req.body;
+
+        if (!url) {
+            return res.status(400).json({
+                success: false,
+                error: 'URL is required'
+            });
+        }
+
+        console.log('🌐 Fetching URL:', url);
+
+        // Fetch the page content
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5'
+            }
+        });
+
+        if (!response.ok) {
+            return res.status(400).json({
+                success: false,
+                error: `Failed to fetch URL: ${response.status} ${response.statusText}`
+            });
+        }
+
+        const html = await response.text();
+        const $ = cheerio.load(html);
+
+        // Extract course information - try multiple selectors
+        let title = $('h1').first().text().trim() ||
+            $('title').text().trim() ||
+            $('[class*="course-title"]').text().trim() ||
+            'Unknown Course';
+
+        // Extract platform from URL
+        let platform = 'Unknown';
+        try {
+            const urlObj = new URL(url);
+            platform = urlObj.hostname.replace('www.', '').split('.')[0];
+            platform = platform.charAt(0).toUpperCase() + platform.slice(1);
+        } catch (e) { }
+
+        // Remove scripts, styles, and hidden elements
+        $('script, style, nav, footer, header, [hidden], .hidden, [style*="display: none"]').remove();
+
+        // Try to find course content/syllabus
+        let syllabusText = '';
+
+        // Try specific selectors for course platforms
+        const selectors = [
+            '[class*="curriculum"]',
+            '[class*="syllabus"]',
+            '[class*="course-content"]',
+            '[class*="lesson-list"]',
+            '[class*="module"]',
+            '[class*="chapter"]',
+            '[class*="section"]',
+            '.accordion',
+            '[role="list"]',
+            'main',
+            'article',
+            '.content'
+        ];
+
+        for (const selector of selectors) {
+            const content = $(selector).text().trim();
+            if (content && content.length > 100) {
+                syllabusText += content + '\n\n';
+            }
+        }
+
+        // If no specific content found, get the body text
+        if (!syllabusText || syllabusText.length < 200) {
+            syllabusText = $('body').text();
+        }
+
+        // Clean up the text
+        syllabusText = syllabusText
+            .replace(/\s+/g, ' ')           // Normalize whitespace
+            .replace(/\n\s*\n/g, '\n')      // Remove empty lines
+            .trim();
+
+        // Truncate if too long (AI has limits)
+        if (syllabusText.length > 15000) {
+            syllabusText = syllabusText.substring(0, 15000) + '...';
+        }
+
+        console.log(`📄 Extracted ${syllabusText.length} characters from ${url}`);
+
+        if (syllabusText.length < 100) {
+            return res.status(400).json({
+                success: false,
+                error: 'Could not extract course content. The page may require login or use JavaScript to load content.'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                title,
+                platform,
+                url,
+                rawText: syllabusText,
+                extractedLength: syllabusText.length
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ URL fetch error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to fetch URL'
         });
     }
 });
@@ -122,9 +246,16 @@ router.delete('/:id', async (req, res) => {
             });
         }
 
+        // Also delete any study plans associated with this course
+        const UserPlan = (await import('../models/UserPlan.js')).default;
+        const deletedPlans = await UserPlan.deleteMany({ course_id: req.params.id });
+
+        console.log(`🗑️ Deleted course: ${course.title} and ${deletedPlans.deletedCount} associated plans`);
+
         res.json({
             success: true,
-            message: 'Course deleted successfully'
+            message: 'Course and associated plans deleted successfully',
+            deletedPlans: deletedPlans.deletedCount
         });
     } catch (error) {
         res.status(500).json({
@@ -135,3 +266,4 @@ router.delete('/:id', async (req, res) => {
 });
 
 export default router;
+
