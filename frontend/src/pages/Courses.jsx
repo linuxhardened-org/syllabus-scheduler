@@ -7,6 +7,7 @@ function Courses() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreatePlan, setShowCreatePlan] = useState(null);
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [planSettings, setPlanSettings] = useState({
         daily_commitment_minutes: 60,
         exclude_weekends: false
@@ -29,9 +30,16 @@ function Courses() {
     };
 
 
-    const deleteCourse = async (courseId) => {
-        const confirmed = window.confirm('Delete this course and all study progress? This cannot be undone.');
-        if (!confirmed) return;
+    const deleteCourse = async (courseId, e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Optimistic update
+        const previousCourses = [...courses];
+        setCourses(prev => prev.filter(c => c._id !== courseId));
+        setDeleteConfirm(null);
 
         try {
             const response = await fetch(`${API_URL}/courses/${courseId}`, {
@@ -39,12 +47,14 @@ function Courses() {
             });
             const data = await response.json();
 
-            if (data.success) {
-                setCourses(prev => prev.filter(c => c._id !== courseId));
-            } else {
+            if (!data.success) {
+                // Revert if failed
+                setCourses(previousCourses);
                 alert('Failed to delete: ' + (data.error || 'Unknown error'));
             }
         } catch (error) {
+            // Revert if error
+            setCourses(previousCourses);
             console.error('Delete error:', error);
             alert('Error deleting course');
         }
@@ -147,13 +157,30 @@ function Courses() {
                                 >
                                     📖 View Lessons
                                 </Link>
-                                <button
-                                    type="button"
-                                    className="btn btn-danger"
-                                    onClick={() => deleteCourse(course._id)}
-                                >
-                                    🗑️
-                                </button>
+                                {deleteConfirm === course._id ? (
+                                    <button
+                                        type="button"
+                                        className="btn btn-danger"
+                                        onClick={(e) => deleteCourse(course._id, e)}
+                                        onMouseLeave={() => setDeleteConfirm(null)}
+                                        style={{ minWidth: '80px' }}
+                                    >
+                                        Sure?
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setDeleteConfirm(course._id);
+                                        }}
+                                        title="Delete Course"
+                                    >
+                                        🗑️
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
