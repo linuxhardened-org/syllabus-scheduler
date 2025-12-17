@@ -15,7 +15,25 @@ function ImportCourse() {
     const [success, setSuccess] = useState('');
     const [importMode, setImportMode] = useState('paste'); // 'paste' or 'url'
     const [activeJob, setActiveJob] = useState(null);
+    const [queueStatus, setQueueStatus] = useState(null);
     const pollInterval = useRef(null);
+
+    // Fetch queue status
+    useEffect(() => {
+        const fetchQueueStatus = async () => {
+            try {
+                const response = await fetch(`${API_URL}/jobs/queue/status`);
+                const data = await response.json();
+                if (data.success) {
+                    setQueueStatus(data.data);
+                }
+            } catch (e) { console.error('Queue status fetch failed', e); }
+        };
+
+        fetchQueueStatus();
+        const interval = setInterval(fetchQueueStatus, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Poll for job status if there's an active job
     useEffect(() => {
@@ -398,6 +416,20 @@ Module 3: Logging & Monitoring
                             >
                                 📋 Load Example Syllabus
                             </button>
+
+                            {queueStatus && (
+                                <div style={{
+                                    marginTop: '1rem',
+                                    padding: '0.75rem',
+                                    background: 'var(--bg-secondary)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    textAlign: 'center',
+                                    fontSize: '0.9rem',
+                                    color: 'var(--text-secondary)'
+                                }}>
+                                    📊 Jobs waiting in queue: <strong>{queueStatus.messageCount}</strong>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
