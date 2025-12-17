@@ -1,7 +1,7 @@
 import express from 'express';
 import Course from '../models/Course.js';
 import { parseWithAI } from '../services/aiService.js';
-import ytpl from 'ytpl';
+import { YouTube } from 'youtube-sr';
 
 const router = express.Router();
 
@@ -45,34 +45,88 @@ router.post('/fetch-url', async (req, res) => {
 
         // Check for YouTube Playlist
         if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            let playlistFound = false;
             try {
-                const playlistId = await ytpl.getPlaylistID(url).catch(() => null);
-                if (playlistId) {
-                    console.log('📺 Detected YouTube Playlist:', playlistId);
-                    const playlist = await ytpl(playlistId, { limit: 500 });
+                // Initial check using simple string matching or regex since YouTube.isPlaylist might be strict
+                if (url.includes('list=')) {
+                    console.log('📺 Detected YouTube Playlist (attempting youtube-sr)...');
+                    const playlist = await YouTube.getPlaylist(url, { limit: 500 });
 
-                    let text = `Course: ${playlist.title}\nPlatform: YouTube\n\n`;
-                    playlist.items.forEach((item, index) => {
-                        text += `${index + 1}. ${item.title} (${item.duration || '0:00'})\n`;
-                    });
+                    if (playlist && playlist.videos.length > 0) {
+                        console.log(`✅ Fetched ${playlist.videos.length} videos from playlist`);
+                        playlistFound = true;
 
-                    return res.json({
-                        success: true,
-                        data: {
-                            title: playlist.title,
-                            platform: 'YouTube',
-                            url,
-                            rawText: text,
-                            extractedLength: text.length
-                        }
-                    });
+                        let text = `Course: ${playlist.title}\nPlatform: YouTube\n\n`;
+                        playlist.videos.forEach((video, index) => {
+                            text += `${index + 1}. ${video.title} (${video.durationFormatted || '0:00'})\n`;
+                        });
+
+                        return res.json({
+                            success: true,
+                            data: {
+                                title: playlist.title,
+                                platform: 'YouTube',
+                                url,
+                                rawText: text,
+                                extractedLength: text.length
+                            }
+                        });
+                    } else {
+                        console.log('⚠️ Playlist found but empty videos');
+                    }
                 }
             } catch (ytError) {
-                console.warn('YouTube playlist fetch failed, falling back to HTML fetch:', ytError.message);
+                console.warn('YouTube playlist fetch failed with youtube-sr:', ytError.message);
+            }
+
+            // Fallback: Manual scraping if youtube-sr failed or returned nothing
+            if (!playlistFound) {
+                try {
+                    console.log('🕵️ Attempting manual YouTube scrape...');
+                    const ytHtmlRes = await fetch(url, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                        }
+                    });
+                    const ytHtml = await ytHtmlRes.text();
+
+                    // Regex to find video titles in ytInitialData
+                    // This regex matches the specific structure used in playlist rendering
+                    const matches = [...ytHtml.matchAll(/"title":{"runs":\[{"text":"(.*?)"}\]},"accessibility"/g)];
+
+                    if (matches.length > 0) {
+                        console.log(`✅ Manually scraped ${matches.length} titles`);
+                        let text = `Course: YouTube Playlist\nPlatform: YouTube\n\n`;
+
+                        // Try to get title from <title>
+                        const pageTitleMatch = ytHtml.match(/<title>(.*?)<\/title>/);
+                        if (pageTitleMatch) {
+                            text = `Course: ${pageTitleMatch[1].replace(' - YouTube', '')}\nPlatform: YouTube\n\n`;
+                        }
+
+                        // Filter and add titles
+                        // The regex includes "accessibility" to be more specific to video list items and avoid random UI text
+                        matches.forEach((m, i) => {
+                            // m[1] is the title
+                            text += `${i + 1}. ${m[1]}\n`;
+                        });
+
+                        return res.json({
+                            success: true,
+                            data: {
+                                title: pageTitleMatch ? pageTitleMatch[1] : 'YouTube Playlist',
+                                platform: 'YouTube',
+                                url,
+                                rawText: text,
+                                extractedLength: text.length
+                            }
+                        });
+                    }
+                } catch (manualError) {
+                    console.error('Manual scrape failed:', manualError);
+                }
             }
         }
-
-        // Fetch the page content
 
         // Fetch the page content
         const response = await fetch(url, {
