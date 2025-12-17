@@ -35,6 +35,38 @@ function ImportCourse() {
         return () => clearInterval(interval);
     }, []);
 
+    // Check for existing job in localStorage on mount
+    useEffect(() => {
+        const savedJobId = localStorage.getItem('activeImportJobId');
+        if (savedJobId) {
+            fetchJobDetails(savedJobId);
+        }
+    }, []);
+
+    const fetchJobDetails = async (jobId) => {
+        try {
+            const response = await fetch(`${API_URL}/jobs/${jobId}`);
+            const data = await response.json();
+            if (data.success) {
+                const job = data.data;
+                setActiveJob(job);
+
+                if (job.status === 'completed') {
+                    setSuccess(`Course "${job.result.title}" imported successfully! ${job.result.modules_count || 0} modules found.`);
+                    localStorage.removeItem('activeImportJobId');
+                    setTimeout(() => navigate('/courses'), 3000);
+                } else if (job.status === 'failed') {
+                    setError('Import failed: ' + (job.result.error || 'Unknown error'));
+                    localStorage.removeItem('activeImportJobId');
+                }
+            } else {
+                localStorage.removeItem('activeImportJobId');
+            }
+        } catch (e) {
+            localStorage.removeItem('activeImportJobId');
+        }
+    };
+
     // Poll for job status if there's an active job
     useEffect(() => {
         if (activeJob && ['pending', 'processing'].includes(activeJob.status)) {
@@ -63,12 +95,14 @@ function ImportCourse() {
                     setSuccess(`Course "${job.result.title}" imported successfully! ${job.result.modules_count || 0} modules found.`);
                     setLoading(false);
                     setRawText('');
+                    localStorage.removeItem('activeImportJobId');
 
                     // Navigate to dashboard after 2 seconds
                     setTimeout(() => navigate('/courses'), 2000);
                 } else if (job.status === 'failed') {
                     setError('Import failed: ' + (job.result.error || 'Unknown error'));
                     setLoading(false);
+                    localStorage.removeItem('activeImportJobId');
                 }
             }
         } catch (err) {
@@ -130,6 +164,7 @@ function ImportCourse() {
 
             if (data.success) {
                 setActiveJob(data.data);
+                localStorage.setItem('activeImportJobId', data.data.job_id);
                 setSuccess('Import job submitted! AI is processing in the background...');
             } else {
                 setError(data.error || 'Import failed');
